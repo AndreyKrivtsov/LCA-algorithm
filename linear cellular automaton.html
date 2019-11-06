@@ -1,0 +1,155 @@
+﻿<html>
+<head>
+	<style type="text/css">
+		.row {clear:both;}
+		.col {width:8px;height:8px;background-color:#EEE;margin:1px;float:left;}
+	</style>
+</head>
+<body>
+<button onclick="start()">START</button>
+<button onclick="stop()">STOP</button>
+Step<input type="text" id="step" placeholder="Step" size="4">
+Perfomance(ms)<input type="text" id="perf" placeholder="Perfomance(ms)" size="4">
+<div id="lca"></div>
+<script>
+
+	let time = performance.now();
+	let density = 0.5;
+	let interval = 100;
+	let state = false;
+	let step_count = 0;
+
+	let cell_array = firstGenRender();
+	let timer = setInterval(function() {
+		if(state){
+			step(cell_array);
+		}
+	}, interval);
+
+	time = performance.now() - time;
+	console.log('Время загрузки = ', time, ' миллисекунд');
+
+	function start() {
+		state = true;
+	}
+	
+	function stop()  {
+		state = false;
+	}
+	
+	function firstGenRender() {
+		let cells = [];
+		let lca = document.querySelector('#lca');
+		for (let i=0;i<30;i++) {
+			cells[i] = [];
+			let row = createDiv('row');
+			for (let j=0;j<120;j++) {
+				let cell = createDiv('col');
+				cellRandomActivate(cell);
+				row.append(cell);
+				cells[i][j] = { 'col': cell };
+			}
+			lca.append(row);
+		}
+		return cells;
+	}
+	
+	function step(cell_array) {
+		let time = performance.now();
+		let new_cell_states = [];
+		let k = 0;
+		let num_active_neighbors;
+		for(let i=0;i<cell_array.length;i++) {
+			for(let j=0;j<cell_array[i].length;j++) {
+				num_active_neighbors = countActiveNeighbors(cell_array, i, j);
+				let cell = cell_array[i][j].col;
+				if(isActive(cell_array[i][j].col)) {
+					if(num_active_neighbors < 2 || num_active_neighbors > 3) {
+						new_cell_states[k] = [i, j, false];
+						k++;
+					}
+				}
+				else {
+					if(num_active_neighbors == 3) {
+						new_cell_states[k] = [i, j, true];
+						k++;
+					}
+				}
+			}	
+		}
+		for(let i=0;i<new_cell_states.length;i++) {
+			let x = new_cell_states[i][0];
+			let y = new_cell_states[i][1];
+			let state = new_cell_states[i][2];
+			if(state == true) { cellActivate(cell_array[x][y].col); }
+			else { cellDeactivate(cell_array[x][y].col); }
+		}
+		log('#step', step_count);
+		step_count++;
+		time = performance.now() - time;
+		log('#perf', time);
+	}
+	
+	function countActiveNeighbors(cellsArr, cell_x, cell_y) {
+		let count = 0;
+		let neighbors = getNeighborsXY(cell_x, cell_y);
+		for (let i=0;i<neighbors.length;i++) {
+			let neigh_x = neighbors[i][0];
+			let neigh_y = neighbors[i][1];
+			if(neigh_x >= 0 && neigh_y >= 0 && neigh_x<30 && neigh_y<120) {
+				if(isActive(cellsArr[neigh_x][neigh_y].col)) {
+					count++;
+				}
+			}
+		}
+		return count;
+	}
+	
+	function cellRandomActivate(elem) {
+		if(getRandomBool()) {elem.style.backgroundColor = 'black';}
+	}
+	
+	function isActive(elem) {
+		if(elem.style.backgroundColor == 'black') {return true}
+		else {return false}
+	}
+	
+	function cellActivate(elem) {
+		elem.style.backgroundColor = 'black';
+	}
+	
+	function cellDeactivate(elem) {
+		elem.style.backgroundColor = '#EEE';
+	}
+	
+	function createDiv(className) {
+		let div = document.createElement('div');
+			div.className = className;
+		return div;
+	}
+	
+	function getNeighborsXY(x, y) {
+		let arr = [
+			[x-1, y-1],
+			[x, y-1],
+			[x+1, y-1],
+			[x-1, y],
+			[x+1, y],
+			[x-1, y+1],
+			[x, y+1],
+			[x+1, y+1],
+		];
+		return arr;
+	}
+	
+	function getRandomBool() {
+	  return Math.floor(Math.random() + density);
+	}
+	
+	function log(target, mess) {
+		document.querySelector(target).value = mess;
+	}
+	
+</script>
+</body>
+</html>
